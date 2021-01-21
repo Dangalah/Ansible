@@ -1,0 +1,33 @@
+---
+- name: Install Nginx Web Server on Debian Family
+  apt:
+    name=nginx
+    state=latest
+  when:
+    ansible_os_family == "Debian"
+  notify:
+    - nginx systemd
+
+- name: Replace default
+  template:
+    src=templates/default
+    dest=/etc/nginx/sites-enabled/default
+  become: yes
+  register: nginx_conf_copy
+
+- name: create /opt/service_state
+  template:
+    src=templates/service_state
+    dest=/opt/service_state
+  become: yes
+  when: nginx_conf_copy.changed
+
+- name: nginx restart
+  shell: "/bin/systemctl restart nginx.service"
+  become: yes
+  when: nginx_conf_copy.changed
+
+- name: copy cron file
+  template:
+    src=templates/service_up
+    dest=/etc/cron.d/service_up
